@@ -1,5 +1,9 @@
 from random import randint
 from sys import exit
+
+import sys
+sys.dont_write_bytecode = True
+
 import Lib
 
 # This function figures out the order in which the creatures in the room act.
