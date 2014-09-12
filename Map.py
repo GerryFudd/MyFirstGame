@@ -7,21 +7,18 @@ sys.dont_write_bytecode = True
 import Lib
 
 # This function figures out the order in which the creatures in the room act.
-# make a list 'rolls' to collect the rolls
-# make a dict 'match' to track who got what initiative roll
-# for each creature in the list, determine the value of roll by d20 + init
-# if roll matches any previous roll, compare the initiative modifiers of the
-# 	previous creature and the current creature.  If they are equal, then move
-#	the value of roll up or down slightly.  If one is greater, adjust the new value
-#	of roll to make the better initiative value go first.
-#	Repeat this process until roll matches no other rolls.
-# Add roll to rolls and add roll: creature to match.
+# the list 'rolls' keeps track of the rolls and the dict 'match' makes sure the roll
+# is attributed to the correct creature.
 def initiative(creature_list):
 	rolls = []
 	match = {}
 	for creature in creature_list:
 		roll = randint(1, 20) + creature.initiative
 		while roll in rolls:
+			# If two initiative rolls are the same, the program needs to decide who goes
+			# first.  The following decides tiebreakers. To track tiebreakers I
+			# chose to add or subtract a very small number to the initiative
+			# rolls.
 			if match[roll].initiative == creature.initiative:
 				result = randint(0, 1)
 				if result == 0:
@@ -38,8 +35,6 @@ def initiative(creature_list):
 	rolls.sort()
 	
 	# Figure out and return the initiative order.
-	# set n to be the largest of the indices that will call something from rolls
-	# make an empty list called 'initiative_order'
 	n = len(rolls) - 1
 	initiative_order = []
 	while n >= 0:
@@ -47,10 +42,13 @@ def initiative(creature_list):
 		n = n - 1
 	return initiative_order
 	
+# This function represents what happens when the player attempts to store an item.
 def store_fun(loot, loot_names, held_names, armor_names, d):
 	print "What do you want to store?"
 	target = raw_input("> ")
-				
+			
+	# The store function in Lib.player.py only works if target is in certain places.
+	# This loop forces the player to chose an object in one of those places.	
 	while not(
 		target in loot_names or target in held_names
 		or target in armor_names or target == 'nothing'
@@ -71,16 +69,23 @@ def store_fun(loot, loot_names, held_names, armor_names, d):
 			d[target], [Lib.player.armor, d[target].slot], loot
 		)
 		
+# This function represents what happens when the player attempts to equip an item.
 def equip_fun(loot, loot_names, bag_names, held_names, armor_names, d):
 	print "What do you want to equip?"
 	target = raw_input("> ")
 			
+	# The equip function in Lib.player.py only works if target is in certain places.
+	# This loop forces the player to chose an object in one of those places.
 	while not(target in loot_names or target in bag_names):
 		print "You can't equip that."
 		target = raw_input("> ")
 	if target == 'nothing':
 		print "Very well."
 				
+	# I may want to change this to something more elegant.  If the player decides to
+	# equip 'nothing', then isinsthance(d['nothing'], ...) will return an error.  I need
+	# to prevent that.  I also need to sort out whether the equipped item is a weapon
+	# or an armor, and that will decide which function from Lib.player I will need.
 	if target != 'nothing':
 		if isinstance(d[target], Lib.Weapon):
 			if d[target] in loot:
@@ -93,10 +98,13 @@ def equip_fun(loot, loot_names, bag_names, held_names, armor_names, d):
 			else:
 				Lib.player.wear(d[target], Lib.player.bag, loot)
 				
+# This function represents what happens when the player attempts to drop an item.
 def drop_fun(loot, loot_names, bag_names, held_names, armor_names, d):
 	print "What do you want to drop?"
 	target = raw_input("> ")
 				
+	# The drop function in Lib.player.py only works if target is in certain places.
+	# This loop forces the player to chose an object in one of those places.
 	while not(
 		target in armor_names or target in held_names
 		or target in bag_names or target == 'nothing'
@@ -117,6 +125,7 @@ def drop_fun(loot, loot_names, bag_names, held_names, armor_names, d):
 	elif d[target] in Lib.player.bag:
 		Lib.player.drop(d[target], Lib.player.bag, loot)
 
+# This function represents what happens when the player choses to manage inventory.
 def manage_inventory(
 	loot, loot_names, bag_names, held_names, armor_names, d
 ):
@@ -143,8 +152,59 @@ of the above, say 'done'.
 		drop_fun(loot, loot_names, bag_names, held_names, armor_names, d)
 			
 	return action
+	
+# This function represents what happens when the player choses to check inventory.
+def check_inventory():
+	arms = {0: 'chest', 1: 'head', 2: 'hands', 3: 'feet', 4: 'back'}
+	print "Your armor:"
+	n = 0
+	while n < 5:
+		if Lib.player.armor[n] != None:
+			print "You are wearing {0} on your {1}.".format(
+				Lib.player.armor[n].name, arms[n]
+			)
+		else:
+			print "You are wearing {0} on your {1}.".format(
+				'nothing', arms[n]
+			)
+		n = n + 1
+			
+	print "Your held items:"
+	hands = {0: 'main', 1: 'off'}
+	n = 0
+	while n < 2:
+		if Lib.player.held[n] != None:
+			print "You are holding {0} in your {1} hand.".format(
+				Lib.player.held[n].name, hands[n]
+			)
+		else:
+			print "You are holding {0} in your {1} hand.".format(
+				'nothing', hands[n]
+			)
+		n = n + 1
+			
+	print "The following items are in your bag:"
+	for thing in Lib.player.bag:
+		print thing.name
+				
+	print """
+Your stats are the following:
+\tHit Points: {0}
+\tArmor Class: {1}
+\tAttack Bonus: {2}
+\tDamage Bonus: {3}
+\tAttack Die: {4}
+	""".format(
+		Lib.player.hit_points, Lib.player.ac, Lib.player.att, Lib.player.damage,
+		Lib.player.die
+	)
 
+# This function runs as soon as the encounter for a room is completed.  It manages all
+# of the non-encounter actions that the player can choose.
 def action(loot):
+	# I made lists containing the names of all of the legal targets for various actions
+	# and a dict that matches them with their objects.  This is the best way I found
+	# to manage interactions with inputs.
 	loot_names = []
 	bag_names = []
 	held_names = []
@@ -175,49 +235,8 @@ def action(loot):
 			for thing in loot:
 				print thing.name
 		elif action == 'check inventory':
-			arms = {0: 'chest', 1: 'head', 2: 'hands', 3: 'feet', 4: 'back'}
-			print "Your armor:"
-			n = 0
-			while n < 5:
-				if Lib.player.armor[n] != None:
-					print "You are wearing {0} on your {1}.".format(
-						Lib.player.armor[n].name, arms[n]
-					)
-				else:
-					print "You are wearing {0} on your {1}.".format(
-						'nothing', arms[n]
-					)
-				n = n + 1
-			
-			print "Your held items:"
-			hands = {0: 'main', 1: 'off'}
-			n = 0
-			while n < 2:
-				if Lib.player.held[n] != None:
-					print "You are holding {0} in your {1} hand.".format(
-						Lib.player.held[n].name, hands[n]
-					)
-				else:
-					print "You are holding {0} in your {1} hand.".format(
-						'nothing', hands[n]
-					)
-				n = n + 1
-			
-			print "The following items are in your bag:"
-			for thing in Lib.player.bag:
-				print thing.name
-				
-			print """
-Your stats are the following:
-\tHit Points: {0}
-\tArmor Class: {1}
-\tAttack Bonus: {2}
-\tDamage Bonus: {3}
-\tAttack Die: {4}
-			""".format(
-				Lib.player.hit_points, Lib.player.ac, Lib.player.att, Lib.player.damage,
-				Lib.player.die
-			)
+			check_inventory()
+		
 		elif action == 'manage inventory':
 			while action != 'done':
 				action = manage_inventory(
@@ -229,6 +248,7 @@ Your stats are the following:
 		else:
 			print "That isn't an option.  Try again."
 
+# This is the first room in the fortress.  It has an encounter and then a chance to loot.
 class GreatHall(object):
 
 	loot = [Lib.dagger, Lib.leather]
@@ -243,7 +263,7 @@ left and right.
 		gob2 = Lib.Goblin('The Right Guard')
 		order = initiative([Lib.player, gob1, gob2])
 		
-		# This code makes lists of legal targets and makes a way of targeting objects
+		# This code makes lists of legal targets and a dict to match
 		targets = []
 		d = {}
 		for thing in order:
@@ -251,17 +271,8 @@ left and right.
 			d[thing.name] = thing
 		targets.remove(Lib.player.name)
 			
-		# Set n to 0
-		# Make sure that Steve is alive and that Steve is not the only creature left
-		# Check if the active creature is dead.  If it is, remove it from targets
-		# and the turn order.  This doesn't change n.
-		# If the active creature is alive, run the act function for that creature
-		# and store the returned action as choice.
-		# verify that choice[0] is attack and verify that order[1] is a valid target.
-		# Run the attack function for the active creature with order[1] as the target.
-		#	This sets n to the next integer.
-		# If order[1] isn't a legal target, leave n alone and start over.
-		# If n is outside the length of order, start the turn order over.
+		# This code runs through a combat.  So far, the only action is to attack.
+		# I will alter this to include more options later.
 		n = 0
 		while order != [Lib.player]:
 			if order[n].hit_points <= 0:
@@ -285,6 +296,8 @@ The guards have both fallen.  You don't think you hear any approaching soldiers,
 but there are most likely more surprises farther in.  For now, you have a chance
 to catch your breath and prepare.
 		"""
+		# The function action will only return anything if the option 'leave'
+		# is chosen.  In this case, next_room will represent the next room.
 		next_room = action(self.loot)
 
 great_hall = GreatHall()
