@@ -6,6 +6,9 @@ sys.dont_write_bytecode = True
 
 import Lib
 
+# This file contains all of the rooms that the player can move between and all of the
+# actions that a player can take when he or she is in the rooms.
+
 # This function figures out the order in which the creatures in the room act.
 # the list 'rolls' keeps track of the rolls and the dict 'match' makes sure the roll
 # is attributed to the correct creature.

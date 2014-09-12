@@ -1,9 +1,12 @@
 from random import randint
 
+# This file contains the library of things that exist within the game.
+
 # All of the things for the protagonist to interact with will be either a
 # Creature, a Weapon, an Armor, or a SpecialItem.  The most complicated of
 # these is the Creature.  I want the Creature class to contain all of the
-# actions that a creature might take.
+# actions that a creature might take.  The creature subclasses will contain
+# the creature attributes such as maximum hit points and the like.
 class Creature(object):
 
 	# The attack action is the most obvious.  This is how one creature attempts
@@ -68,14 +71,14 @@ class PlayerCharacter(Creature):
 	held = [club, None]
 	bag = []
 
-	def __init__(self, name, maxhp, initiative):
+	def __init__(self, name, maxhp, combat, athletic):
 		self.name = name
 		self.maxhp = maxhp
 		self.hit_points = maxhp
-		self.ac = 11 + self.armor[0].bonus
-		self.att = 2 + self.held[0].bonus
-		self.damage = 2 + self.held[0].bonus
-		self.initiative = initiative
+		self.ac = 10 + athletic + self.armor[0].bonus
+		self.att = 1 + combat + self.held[0].bonus
+		self.damage = combat + self.held[0].bonus
+		self.initiative = athletic
 		self.die = self.held[0].die
 	
 	# Creatures should be able to drop items and store items.  That is the reason for
@@ -180,7 +183,7 @@ class PlayerCharacter(Creature):
 		
 			return target
 	
-player = PlayerCharacter('Steve', 14, 1)
+player = PlayerCharacter('Steve', 14, 2, 1)
 		
 class Goblin(Creature):
 	
