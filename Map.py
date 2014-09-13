@@ -273,20 +273,12 @@ def loot_the_room(loot):
 		else:
 			print "That isn't an option.  Try again."
 
-# This is the first room in the fortress.  It has an encounter and then a chance to loot.
-class GreatHall(object):
-
-	loot = [Lib.dagger, Lib.leather]
+# This is my basic room outline.  It has an encounter and then a chance to loot.
+class Room(object):
 	
-	def enter(self):
-		print """
-You are now in the great hall.  There are two goblins guarding the main entrance
-and two doors on the far side of the room.  The guards attack you from the
-left and right.
-		"""
-		gob1 = Lib.Goblin('The Left Guard')
-		gob2 = Lib.Goblin('The Right Guard')
-		order = initiative([Lib.player, gob1, gob2])
+	def encounter(self, creatures):
+		creatures.append(Lib.player)
+		order = initiative(creatures)
 		
 		# This code makes lists of legal targets and a dict to match
 		targets = []
@@ -323,6 +315,24 @@ left and right.
 				exit(1)
 			if n >= len(order):
 				n = 0
+		
+# This is the Great Hall.  It is the first room in the fortress.
+class GreatHall(Room):
+
+	loot = [Lib.dagger, Lib.leather]
+	
+	gob1 = Lib.Goblin('The Left Guard')
+	gob2 = Lib.Goblin('The Right Guard')
+	creatures = [gob1, gob2]
+	
+	def enter(self):
+		print """
+You are now in the great hall.  There are two goblins guarding the main entrance
+and two doors on the far side of the room.  The guards attack you from the
+left and right.
+		"""
+		
+		self.encounter(self.creatures)
 		
 		print """
 The guards have both fallen.  You don't think you hear any approaching soldiers,
