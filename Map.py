@@ -47,7 +47,8 @@ def initiative(creature_list):
 	
 # This function represents what happens when the player attempts to store an item.
 def store_fun(loot, loot_names, held_names, armor_names, d):
-	print "What do you want to store?"
+	print "What do you want to store?  If you don't want to store something, type"
+	print "'nothing'."
 	target = raw_input("> ")
 			
 	# The store function in Lib.player.py only works if target is in certain places.
@@ -77,12 +78,13 @@ def store_fun(loot, loot_names, held_names, armor_names, d):
 		
 # This function represents what happens when the player attempts to equip an item.
 def equip_fun(loot, loot_names, bag_names, held_names, armor_names, d):
-	print "What do you want to equip?"
+	print "What do you want to equip?  If you don't want to equip something, type"
+	print "'nothing'."
 	target = raw_input("> ")
 			
 	# The equip function in Lib.player.py only works if target is in certain places.
 	# This loop forces the player to chose an object in one of those places.
-	while not(target in loot_names or target in bag_names):
+	while not(target in loot_names or target in bag_names or target == 'nothing'):
 		print "You can't equip that."
 		target = raw_input("> ")
 	if target == 'nothing':
@@ -113,7 +115,8 @@ def equip_fun(loot, loot_names, bag_names, held_names, armor_names, d):
 				
 # This function represents what happens when the player attempts to drop an item.
 def drop_fun(loot, loot_names, bag_names, held_names, armor_names, d):
-	print "What do you want to drop?"
+	print "What do you want to drop?  If you don't want to drop something, type"
+	print "'nothing'."
 	target = raw_input("> ")
 				
 	# The drop function in Lib.player.py only works if target is in certain places.
@@ -171,17 +174,17 @@ of the above, say 'done'.
 	
 # This function represents what happens when the player choses to check inventory.
 def check_inventory():
-	arms = {0: 'chest', 1: 'head', 2: 'hands', 3: 'feet', 4: 'back'}
+	armor_slots = {0: 'chest', 1: 'head', 2: 'hands', 3: 'feet', 4: 'back'}
 	print "Your armor:"
 	n = 0
 	while n < 5:
 		if Lib.player.armor[n] != None:
 			print "You are wearing {0} on your {1}.".format(
-				Lib.player.armor[n].name, arms[n]
+				Lib.player.armor[n].name, armor_slots[n]
 			)
 		else:
 			print "You are wearing {0} on your {1}.".format(
-				'nothing', arms[n]
+				'nothing', armor_slots[n]
 			)
 		n = n + 1
 			
@@ -243,7 +246,7 @@ def reset_names(loot):
 	
 # This function runs as soon as the encounter for a room is completed.  It manages all
 # of the non-encounter actions that the player can choose.
-def action(loot):
+def loot_the_room(loot):
 	targetable = reset_names(loot)
 			
 	while True:
@@ -304,8 +307,15 @@ left and right.
 				order.remove(order[n])
 			else:
 				print "{0} has the initiative.".format(order[n].name)
-				choice = order[n].act(targets)
-				order[n].attack(d[choice])
+				choice = order[n].comb(targets)
+				# The combat function in Creature needs to return a list.
+				# The first entry in the list needs to be either 'attack' or
+				# special.  The second entry needs to be a choice that is associated
+				# with that type of action.
+				if choice[0] == 'attack':
+					order[n].attack(d[choice[1]])
+				elif choice[0] == 'special':
+					order[n].held[1].action(d[choice[1]])
 				n = n + 1
 				
 			if Lib.player.hit_points <= 0:
@@ -321,6 +331,6 @@ to catch your breath and prepare.
 		"""
 		# The function action will only return anything if the option 'leave'
 		# is chosen.  In this case, next_room will represent the next room.
-		next_room = action(self.loot)
+		next_room = loot_the_room(self.loot)
 
 great_hall = GreatHall()

@@ -40,8 +40,8 @@ class Creature(object):
 					target.name, target.hit_points
 				)
 				
-	def act(self, targets):
-		return 'Steve'
+	def comb(self, targets):
+		return ['attack', player.name]
 		
 class Weapon(object):
 	
@@ -52,10 +52,33 @@ class Weapon(object):
 		
 class SpecialItem(object):
 
-	def __init__(self, name, action, other):
+	def action(self):
+		print "There is no special action for this item."
+
+class Shield(SpecialItem):
+	
+	def __init__(self, name, bonus):
 		self.name = name
-		self.action = action
-		self.other = other
+		self.bonus = bonus
+		
+def magic_missile(target):
+	damage = randint(1, 4) + 1
+	target.hit_points = target.hit_points - damage
+	print """
+A short bolt of pure force springs forth from your arm.  It strikes {0} in the chest
+and deals {1} points of damage.
+
+{0} has {2} hit points left.
+	""".format(target.name, damage, target.hit_points)  
+	
+class Wand(SpecialItem):
+
+	def __init__(self, name, spell_name):
+		self.name = name
+		self.spell_name = spell_name
+		
+	def action(self, target):
+		self.spell_name(target)
 		
 class Armor(object):
 	
@@ -65,24 +88,6 @@ class Armor(object):
 		self.action = action
 		self.bonus = bonus
 		self.slot = slot
-		
-def magic_missile(legal_targets):
-	n = 0
-	damage = []
-	targets = []
-	while n < 2:
-		damage.append(randint(1, 4) + 1)
-		print "Who do you want to hit with missile {0}?".format(n + 1)
-		print "The legal targets are:"
-		for thing in legal_targets:
-			print thing
-		target = raw_input("> ")
-		while not(target in legal_targets):
-			print "Try again."
-			target = raw_input("> ")
-		targets.append(target)
-		n = n + 1
-	return ['damage', damage, targets]
 
 club = Weapon('Club', 4, 0)
 dagger = Weapon('Dagger', 4, 1)
@@ -90,13 +95,13 @@ ssword = Weapon('Shord Sword', 6, 1)
 cloth = Armor('Cloth Armor', None, 1, 0)
 leather = Armor('Leather Armor', None, 2, 0)
 mail = Armor('Chain Mail', None, 4, 0)
-mmwand = SpecialItem('Wand of Magic Missile', magic_missile, [None])
-buckler = SpecialItem('Buckler', None, ['ac', 1])
+mmwand = Wand('Wand of Magic Missile', magic_missile)
+buckler = Shield('Buckler', 1)
 	
 class PlayerCharacter(Creature):
 		
 	armor = [cloth, None, None, None, None]
-	held = [club, buckler]
+	held = [club, mmwand]
 	bag = []
 
 	def __init__(self, name, maxhp, combat, athletic):
@@ -110,10 +115,8 @@ class PlayerCharacter(Creature):
 		self.die = self.held[0].die
 		
 		if self.held[1] != None:
-			if self.held[1].other[0] == 'ac':
-				self.ac = self.ac + self.held[1].other[1]
-			elif self.held[1].other[0] == 'attack':
-				self.att = self.att + self.held[1].other[1]
+			if isinstance(self.held[1], Shield):
+				self.ac = self.ac + self.held[1].bonus
 	
 	# Creatures should be able to drop items and store items.  That is the reason for
 	# the two functions drop and store.
@@ -135,12 +138,9 @@ class PlayerCharacter(Creature):
 			print "Your Damage Bonus is now: {0}.".format(self.damage)
 			location[0][0] = None
 		elif location[0] == self.held and location[1] == 1:
-			if thing.other[0] == 'ac':
-				self.ac = self.ac - thing.other[1]
+			if isinstance(thing, Shield):
+				self.ac = self.ac - thing.bonus
 				print "Your Armor Class is now {0}.".format(self.ac)
-			elif thing.other[0] == 'attack':
-				self.att = self.att - thing.other[1]
-				print "Your Aattack Bonus is now {0}.".format(self.att)
 			location[0][1] = None
 		else:
 			location.remove(thing)
@@ -168,28 +168,16 @@ class PlayerCharacter(Creature):
 			print "Your Damage Bonus is now: {0}.".format(self.damage)
 			location[0][0] = None
 		elif location[0] == self.held and location[1] == 1:
-			if thing.other[0] == 'ac':
-				self.ac = self.ac - thing.other[1]
+			if isinstance(thing, Shield):
+				self.ac = self.ac - thing.bonus
 				print "Your Armor Class is now {0}.".format(self.ac)
-			elif thing.other[0] == 'attack':
-				self.att = self.att - thing.other[1]
-				print "Your Aattack Bonus is now {0}.".format(self.att)
 			location[0][1] = None
 		else:
 			location.remove(thing)
 		self.bag.append(thing)
 		print "You have stored {0}.".format(thing.name)
 		
-	# This function will check what slot an item will take up.  Then it will check if
-	# there is already an item there.  If an item is already in that slot, the
-	# function will attempt to store whatever is already in the slot.  If there is not
-	# enough storage space, then it will drop the item that is already in the
-	# destination slot. The next step is to equip the item.  This means that any
-	# attributes that should be changed by the item are changed, and the item should
-	# be placed in the appropriate list.
-	# thing should be an instance of Weapon or Armor
-	# location should be a list
-	# room should be a list
+	# The three functions below are the three possibilities for an equip command
 	def wear(self, thing, location, room):
 		print "You are attempting to put on {0}.".format(thing.name)
 		if self.armor[thing.slot] != None:
@@ -208,12 +196,9 @@ class PlayerCharacter(Creature):
 			self.store(self.held[1], [self.held, 1], room)
 		
 		self.held[1] = thing
-		if thing.other[0] == 'ac':
-			self.ac = self.ac + thing.other[1]
+		if isinstance(thing, Shield):
+			self.ac = self.ac + thing.bonus
 			print "Your Armor Class is now {0}.".format(self.ac)
-		elif thing.other[0] == 'attack':
-			self.att = self.att + thing.other[1]
-			print "Your Aattack Bonus is now {0}.".format(self.att)
 		
 		location.remove(thing)
 		print "You have equipped {0}.".format(thing.name)
@@ -235,8 +220,33 @@ class PlayerCharacter(Creature):
 		location.remove(thing)
 		print "You have equipped {0}.".format(thing.name)
 	
-	def act(self, targets):
-		while targets != []:
+	# This function manages the actions a player may take in combat
+	def comb(self, targets):
+		print "What do you want to do?  You can 'attack' or 'special'."
+		action = raw_input("> ")
+		
+		while action != 'attack' and action != 'special':
+			print "You can't do that.  Choose 'attack' or 'special'."
+			action = raw_input("> ")
+			
+		if action == 'special':
+			if not(isinstance(player.held[1], Wand)):
+				print "You don't have any items to use.  You must attack."
+				action = 'attack'
+			else:
+				print """
+You attempt to use {0}.
+				""".format(player.held[1].name)
+				print "What do you want to target?  The legal targets are:"
+				for thing in targets:
+					print thing
+				target = raw_input("> ")
+		
+			while not(target in targets):
+				print "That isn't a legal target."
+				target = raw_input("> ")
+	
+		if action == 'attack':
 			print "Who will you attack?  The legal targets are:"
 			for thing in targets:
 				print thing
@@ -246,8 +256,10 @@ class PlayerCharacter(Creature):
 				print "That isn't a legal target."
 				target = raw_input("> ")
 		
-			return target
+		return [action, target]
 	
+# The game defaults to making a player named Steve with 14 hit points, combat = 2, and
+# athletic = 1
 player = PlayerCharacter('Steve', 14, 2, 1)
 		
 class Goblin(Creature):
