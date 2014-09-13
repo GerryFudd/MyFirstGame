@@ -50,25 +50,53 @@ class Weapon(object):
 		self.die = die
 		self.bonus = bonus
 		
+class SpecialItem(object):
+
+	def __init__(self, name, action, other):
+		self.name = name
+		self.action = action
+		self.other = other
+		
 class Armor(object):
 	
 	# The slots are 0: chest, 1: head, 2: hands, 3: feet, 4: back
-	def __init__(self, name, bonus, slot):
+	def __init__(self, name, action, bonus, slot):
 		self.name = name
+		self.action = action
 		self.bonus = bonus
 		self.slot = slot
+		
+def magic_missile(legal_targets):
+	n = 0
+	damage = []
+	targets = []
+	while n < 2:
+		damage.append(randint(1, 4) + 1)
+		print "Who do you want to hit with missile {0}?".format(n + 1)
+		print "The legal targets are:"
+		for thing in legal_targets:
+			print thing
+		target = raw_input("> ")
+		while not(target in legal_targets):
+			print "Try again."
+			target = raw_input("> ")
+		targets.append(target)
+		n = n + 1
+	return ['damage', damage, targets]
 
 club = Weapon('Club', 4, 0)
 dagger = Weapon('Dagger', 4, 1)
 ssword = Weapon('Shord Sword', 6, 1)
-cloth = Armor('Cloth Armor', 1, 0)
-leather = Armor('Leather Armor', 2, 0)
-mail = Armor('Chain Mail', 4, 0)
+cloth = Armor('Cloth Armor', None, 1, 0)
+leather = Armor('Leather Armor', None, 2, 0)
+mail = Armor('Chain Mail', None, 4, 0)
+mmwand = SpecialItem('Wand of Magic Missile', magic_missile, [None])
+buckler = SpecialItem('Buckler', None, ['ac', 1])
 	
 class PlayerCharacter(Creature):
 		
 	armor = [cloth, None, None, None, None]
-	held = [club, None]
+	held = [club, buckler]
 	bag = []
 
 	def __init__(self, name, maxhp, combat, athletic):
@@ -80,6 +108,12 @@ class PlayerCharacter(Creature):
 		self.damage = combat + self.held[0].bonus
 		self.initiative = athletic
 		self.die = self.held[0].die
+		
+		if self.held[1] != None:
+			if self.held[1].other[0] == 'ac':
+				self.ac = self.ac + self.held[1].other[1]
+			elif self.held[1].other[0] == 'attack':
+				self.att = self.att + self.held[1].other[1]
 	
 	# Creatures should be able to drop items and store items.  That is the reason for
 	# the two functions drop and store.
@@ -92,14 +126,22 @@ class PlayerCharacter(Creature):
 			self.ac = self.ac - thing.bonus
 			print "Your Armor Class is now: {0}.".format(self.ac)
 			location[0][location[1]] = None
-		elif location[0] == self.held:
+		elif location[0] == self.held and location[1] == 0:
 			self.die = self.die - thing.die
 			print "Your Attack Die is now: {0}.".format(self.die)
 			self.att = self.att - thing.bonus
 			print "Your Attack Bonus is now: {0}.".format(self.att)
 			self.damage = self.damage - thing.bonus
 			print "Your Damage Bonus is now: {0}.".format(self.damage)
-			location[0][location[1]] = None
+			location[0][0] = None
+		elif location[0] == self.held and location[1] == 1:
+			if thing.other[0] == 'ac':
+				self.ac = self.ac - thing.other[1]
+				print "Your Armor Class is now {0}.".format(self.ac)
+			elif thing.other[0] == 'attack':
+				self.att = self.att - thing.other[1]
+				print "Your Aattack Bonus is now {0}.".format(self.att)
+			location[0][1] = None
 		else:
 			location.remove(thing)
 		room.append(thing)
@@ -126,6 +168,12 @@ class PlayerCharacter(Creature):
 			print "Your Damage Bonus is now: {0}.".format(self.damage)
 			location[0][0] = None
 		elif location[0] == self.held and location[1] == 1:
+			if thing.other[0] == 'ac':
+				self.ac = self.ac - thing.other[1]
+				print "Your Armor Class is now {0}.".format(self.ac)
+			elif thing.other[0] == 'attack':
+				self.att = self.att - thing.other[1]
+				print "Your Aattack Bonus is now {0}.".format(self.att)
 			location[0][1] = None
 		else:
 			location.remove(thing)
@@ -153,6 +201,23 @@ class PlayerCharacter(Creature):
 		
 		location.remove(thing)
 		print "You have put on {0}.".format(thing.name)
+		
+	def hold(self, thing, location, room):
+		print "You are attempting to equip {0}.".format(thing.name)
+		if self.held[1] != None:
+			self.store(self.held[1], [self.held, 1], room)
+		
+		self.held[1] = thing
+		if thing.other[0] == 'ac':
+			self.ac = self.ac + thing.other[1]
+			print "Your Armor Class is now {0}.".format(self.ac)
+		elif thing.other[0] == 'attack':
+			self.att = self.att + thing.other[1]
+			print "Your Aattack Bonus is now {0}.".format(self.att)
+		
+		location.remove(thing)
+		print "You have equipped {0}.".format(thing.name)
+		
 	
 	def equip(self, thing, location, room):
 		print "You are attempting to equip {0}.".format(thing.name)

@@ -65,7 +65,10 @@ def store_fun(loot, loot_names, held_names, armor_names, d):
 		Lib.player.store(d[target], loot, loot)
 			
 	elif target in held_names:
-		Lib.player.store(d[target], [Lib.player.held, 0], loot)
+		if isinstance(d[target], Lib.Weapon):
+			Lib.player.store(d[target], [Lib.player.held, 0], loot)
+		if isinstance(d[target], Lib.SpecialItem):
+			Lib.player.store(d[target], [Lib.player.held, 1], loot)
 			
 	elif target in armor_names:
 		Lib.player.store(
@@ -95,11 +98,18 @@ def equip_fun(loot, loot_names, bag_names, held_names, armor_names, d):
 				Lib.player.equip(d[target], loot, loot)
 			else:
 				Lib.player.equip(d[target], Lib.player.bag, loot)
+				
 		elif isinstance(d[target], Lib.Armor):
 			if d[target] in loot:
 				Lib.player.wear(d[target], loot, loot)
 			else:
 				Lib.player.wear(d[target], Lib.player.bag, loot)
+				
+		elif isinstance(d[target], Lib.SpecialItem):
+			if d[target] in loot:
+				Lib.player.equip(d[target], loot, loot)
+			else:
+				Lib.player.hold(d[target], Lib.player.bag, loot)
 				
 # This function represents what happens when the player attempts to drop an item.
 def drop_fun(loot, loot_names, bag_names, held_names, armor_names, d):
@@ -116,17 +126,20 @@ def drop_fun(loot, loot_names, bag_names, held_names, armor_names, d):
 		target = raw_input("> ")
 	if target == 'nothing':
 		print "Very well."
-				
-	if d[target] in Lib.player.armor:
-		Lib.player.drop(
-			d[target], [Lib.player.armor,d[target].slot], loot
-		)
-	elif d[target] in Lib.player.held:
-		Lib.player.drop(
-			d[target], [Lib.player.held,d[target].slot], loot
-		)
-	elif d[target] in Lib.player.bag:
+			
+	elif target in bag_names:
 		Lib.player.drop(d[target], Lib.player.bag, loot)
+			
+	elif target in held_names:
+		if isinstance(d[target], Lib.Weapon):
+			Lib.player.drop(d[target], [Lib.player.held, 0], loot)
+		if isinstance(d[target], Lib.SpecialItem):
+			Lib.player.drop(d[target], [Lib.player.held, 1], loot)
+			
+	elif target in armor_names:
+		Lib.player.drop(
+			d[target], [Lib.player.armor, d[target].slot], loot
+		)
 
 # This function represents what happens when the player choses to manage inventory.
 def manage_inventory(
@@ -144,7 +157,7 @@ of the above, say 'done'.
 		action = raw_input("> ")
 	if action == 'done':
 		print "Very well."
-		return action
+		
 	elif action == 'store':
 		store_fun(loot, loot_names, held_names, armor_names, d)
 				
@@ -202,12 +215,11 @@ Your stats are the following:
 		Lib.player.die
 	)
 
-# This function runs as soon as the encounter for a room is completed.  It manages all
-# of the non-encounter actions that the player can choose.
-def action(loot):
-	# I made lists containing the names of all of the legal targets for various actions
-	# and a dict that matches them with their objects.  This is the best way I found
-	# to manage interactions with inputs.
+
+# I made lists containing the names of all of the legal targets for various actions
+# and a dict that matches them with their objects.  This is the best way I found
+# to manage interactions with inputs.
+def reset_names(loot):
 	loot_names = []
 	bag_names = []
 	held_names = []
@@ -216,7 +228,6 @@ def action(loot):
 	for thing in loot:
 		loot_names.append(thing.name)
 		d[thing.name] = thing
-	loot_names.append('nothing')
 	for thing in Lib.player.bag:
 		bag_names.append(thing.name)
 		d[thing.name] = thing
@@ -228,6 +239,12 @@ def action(loot):
 		if thing != None:
 			armor_names.append(thing.name)
 			d[thing.name] = thing
+	return [loot_names, bag_names, held_names, armor_names, d]
+	
+# This function runs as soon as the encounter for a room is completed.  It manages all
+# of the non-encounter actions that the player can choose.
+def action(loot):
+	targetable = reset_names(loot)
 			
 	while True:
 		print "Do you want to 'search', 'check inventory', 'manage inventory',"
@@ -243,8 +260,10 @@ def action(loot):
 		elif action == 'manage inventory':
 			while action != 'done':
 				action = manage_inventory(
-					loot, loot_names, bag_names, held_names, armor_names, d
+					loot, targetable[0], targetable[1], targetable[2], targetable[3],
+					targetable[4]
 				)
+				targetable = reset_names(loot)
 				
 		elif action == 'leave':
 			print "There are no other rooms yet.  Try something else."
@@ -288,6 +307,7 @@ left and right.
 				choice = order[n].act(targets)
 				order[n].attack(d[choice])
 				n = n + 1
+				
 			if Lib.player.hit_points <= 0:
 				print "You are dead."
 				exit(1)
