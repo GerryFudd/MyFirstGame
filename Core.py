@@ -3,4 +3,6 @@ sys.dont_write_bytecode = True
 
 import Map
 
-Map.great_hall.enter()
+
+great_hall = Map.GreatHall()
+great_hall.enter()

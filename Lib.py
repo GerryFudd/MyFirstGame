@@ -71,6 +71,17 @@ and deals {1} points of damage.
 {0} has {2} hit points left.
 	""".format(target.name, damage, target.hit_points)  
 	
+def heal(target):
+	healing = randint(1, 8) +1
+	if target.maxhp < target.hit_points + healing:
+		print "{0} gains {1} hit points.".format(
+			target.name, target.maxhp - target.hit_points
+		)
+		target.hit_points = target.maxhp
+	else:
+		print "{0} gains {1} hit points.".format(target.name, healing)
+		target.hit_points = target.hit_points + healing
+	
 class Wand(SpecialItem):
 
 	def __init__(self, name, spell_name):
@@ -79,6 +90,15 @@ class Wand(SpecialItem):
 		
 	def action(self, target):
 		self.spell_name(target)
+		
+class Potion(SpecialItem):
+
+	def __init__(self, name, spell_name):
+		self.name = name
+		self.spell_name = spell_name
+		
+	def action(self):
+		self.spell_name(player)
 		
 class Armor(object):
 	
@@ -97,11 +117,13 @@ leather = Armor('Leather Armor', None, 2, 0)
 mail = Armor('Chain Mail', None, 4, 0)
 mmwand = Wand('Wand of Magic Missile', magic_missile)
 buckler = Shield('Buckler', 1)
+hpot = Potion('Healing Potion', heal)
 	
 class PlayerCharacter(Creature):
 		
 	armor = [cloth, None, None, None, None]
-	held = [club, mmwand]
+	held = [club, buckler]
+	belt = [hpot]
 	bag = []
 
 	def __init__(self, name, maxhp, combat, athletic):
@@ -152,13 +174,16 @@ class PlayerCharacter(Creature):
 	# The room must be a list.
 	def store(self, thing, location, room):
 		print "You are attempting to store {0}.".format(thing.name)
+
 		if len(self.bag) >= 5:
 			print "Your bag is already full."
 			self.drop(thing, location, room)
+			
 		elif location[0] == self.armor:
 			self.ac = self.ac - thing.bonus
 			print "Your Armor Class is now: {0}.".format(self.ac)
 			location[0][location[1]] = None
+			
 		elif location[0] == self.held and location[1] == 0:
 			self.die = self.die - thing.die
 			print "Your Attack Die is now: {0}.".format(self.die)
@@ -167,17 +192,21 @@ class PlayerCharacter(Creature):
 			self.damage = self.damage - thing.bonus
 			print "Your Damage Bonus is now: {0}.".format(self.damage)
 			location[0][0] = None
+			
 		elif location[0] == self.held and location[1] == 1:
 			if isinstance(thing, Shield):
 				self.ac = self.ac - thing.bonus
 				print "Your Armor Class is now {0}.".format(self.ac)
 			location[0][1] = None
+			
 		else:
 			location.remove(thing)
+			
 		self.bag.append(thing)
 		print "You have stored {0}.".format(thing.name)
 		
-	# The three functions below are the three possibilities for an equip command
+	# The four functions below are the four possibilities for what may happen to
+	# an item when it gets equipped.
 	def wear(self, thing, location, room):
 		print "You are attempting to put on {0}.".format(thing.name)
 		if self.armor[thing.slot] != None:
@@ -219,34 +248,66 @@ class PlayerCharacter(Creature):
 		
 		location.remove(thing)
 		print "You have equipped {0}.".format(thing.name)
+		
+	def tuck(self, thing, location, room):
+		print """
+You are attempting to tuck {0} into your potion belt.
+		""".format(thing.name)
+		
+		if len(self.belt) >= 5:
+			print "Your potion belt is already full."
+			self.store(thing, location, room)
+		else:	
+			self.belt.append(thing)
+			location.remove(thing)
+			print "{0} is tucked into your belt.".format(thing.name)
 	
 	# This function manages the actions a player may take in combat
 	def comb(self, targets):
-		print "What do you want to do?  You can 'attack' or 'special'."
+		print "What do you want to do?  You can 'attack', 'special',"
+		print "or 'potion'."
 		action = raw_input("> ")
 		
-		while action != 'attack' and action != 'special':
-			print "You can't do that.  Choose 'attack' or 'special'."
+		while not(
+			action == 'attack'
+			or (action == 'special' and isinstance(player.held[1], Wand))
+			or (action == 'potion' and player.belt != [])
+		):
+			print "You can't do that."
 			action = raw_input("> ")
 			
 		if action == 'special':
-			if not(isinstance(player.held[1], Wand)):
-				print "You don't have any items to use.  You must attack."
-				action = 'attack'
-			else:
-				print """
+			print """
 You attempt to use {0}.
-				""".format(player.held[1].name)
-				print "What do you want to target?  The legal targets are:"
-				for thing in targets:
-					print thing
-				target = raw_input("> ")
+			""".format(player.held[1].name)
+			print "What do you want to target?  The legal targets are:"
+			for thing in targets:
+				print thing
+			target = raw_input("> ")
 		
 			while not(target in targets):
 				print "That isn't a legal target."
 				target = raw_input("> ")
+				
+		elif action == 'potion':
+			print "Which potion will you use?"
+			print "The available potions are:"
+			n = 0
+			belt_names = []
+			d = {}
+			while n < len(player.belt):
+				print player.belt[n].name
+				belt_names.append(player.belt[n].name)
+				d[player.belt[n].name] = n
+			target = raw_input("> ")
+			
+			while not(target in belt_names):
+				print "That isn't an avalable potion."
+				target = raw_input("> ")
+				
+			target = d[target]
 	
-		if action == 'attack':
+		elif action == 'attack':
 			print "Who will you attack?  The legal targets are:"
 			for thing in targets:
 				print thing

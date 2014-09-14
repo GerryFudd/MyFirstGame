@@ -46,7 +46,7 @@ def initiative(creature_list):
 	return initiative_order
 	
 # This function represents what happens when the player attempts to store an item.
-def store_fun(loot, loot_names, held_names, armor_names, d):
+def store_fun(loot, loot_names, held_names, armor_names, belt_names, d):
 	print "What do you want to store?  If you don't want to store something, type"
 	print "'nothing'."
 	target = raw_input("> ")
@@ -55,7 +55,8 @@ def store_fun(loot, loot_names, held_names, armor_names, d):
 	# This loop forces the player to chose an object in one of those places.	
 	while not(
 		target in loot_names or target in held_names
-		or target in armor_names or target == 'nothing'
+		or target in armor_names or target in belt_names
+		or target == 'nothing'
 	):
 		print "You can't store that."
 		target = raw_input("> ")
@@ -64,6 +65,9 @@ def store_fun(loot, loot_names, held_names, armor_names, d):
 			
 	elif target in loot_names:
 		Lib.player.store(d[target], loot, loot)
+			
+	elif target in belt_names:
+		Lib.player.store(d[target], Lib.player.belt, loot)
 			
 	elif target in held_names:
 		if isinstance(d[target], Lib.Weapon):
@@ -77,7 +81,7 @@ def store_fun(loot, loot_names, held_names, armor_names, d):
 		)
 		
 # This function represents what happens when the player attempts to equip an item.
-def equip_fun(loot, loot_names, bag_names, held_names, armor_names, d):
+def equip_fun(loot, loot_names, bag_names, d):
 	print "What do you want to equip?  If you don't want to equip something, type"
 	print "'nothing'."
 	target = raw_input("> ")
@@ -108,13 +112,20 @@ def equip_fun(loot, loot_names, bag_names, held_names, armor_names, d):
 				Lib.player.wear(d[target], Lib.player.bag, loot)
 				
 		elif isinstance(d[target], Lib.SpecialItem):
-			if d[target] in loot:
-				Lib.player.equip(d[target], loot, loot)
+			if isinstance(d[target], Lib.Potion):
+				if d[target] in loot:
+					Lib.player.tuck(d[target], loot, loot)
+				else:
+					Lib.player.tuck(d[target], Lib.player.bag, loot)
+				
 			else:
-				Lib.player.hold(d[target], Lib.player.bag, loot)
+				if d[target] in loot:
+					Lib.player.hold(d[target], loot, loot)
+				else:
+					Lib.player.hold(d[target], Lib.player.bag, loot)
 				
 # This function represents what happens when the player attempts to drop an item.
-def drop_fun(loot, loot_names, bag_names, held_names, armor_names, d):
+def drop_fun(loot, bag_names, held_names, armor_names, belt_names, d):
 	print "What do you want to drop?  If you don't want to drop something, type"
 	print "'nothing'."
 	target = raw_input("> ")
@@ -123,7 +134,8 @@ def drop_fun(loot, loot_names, bag_names, held_names, armor_names, d):
 	# This loop forces the player to chose an object in one of those places.
 	while not(
 		target in armor_names or target in held_names
-		or target in bag_names or target == 'nothing'
+		or target in bag_names or target in belt_names
+		or target == 'nothing'
 	):
 		print "You can't drop that."
 		target = raw_input("> ")
@@ -132,6 +144,9 @@ def drop_fun(loot, loot_names, bag_names, held_names, armor_names, d):
 			
 	elif target in bag_names:
 		Lib.player.drop(d[target], Lib.player.bag, loot)
+			
+	elif target in belt_names:
+		Lib.player.drop(d[target], Lib.player.belt, loot)
 			
 	elif target in held_names:
 		if isinstance(d[target], Lib.Weapon):
@@ -146,7 +161,7 @@ def drop_fun(loot, loot_names, bag_names, held_names, armor_names, d):
 
 # This function represents what happens when the player choses to manage inventory.
 def manage_inventory(
-	loot, loot_names, bag_names, held_names, armor_names, d
+	loot, loot_names, bag_names, held_names, armor_names, belt_names, d
 ):
 
 	print """
@@ -162,13 +177,13 @@ of the above, say 'done'.
 		print "Very well."
 		
 	elif action == 'store':
-		store_fun(loot, loot_names, held_names, armor_names, d)
+		store_fun(loot, loot_names, held_names, armor_names, belt_names, d)
 				
 	elif action == 'equip':
-		equip_fun(loot, loot_names, bag_names, held_names, armor_names, d)
+		equip_fun(loot, loot_names, bag_names, d)
 		
 	elif action == 'drop':
-		drop_fun(loot, loot_names, bag_names, held_names, armor_names, d)
+		drop_fun(loot, bag_names, held_names, armor_names, belt_names, d)
 			
 	return action
 	
@@ -188,7 +203,7 @@ def check_inventory():
 			)
 		n = n + 1
 			
-	print "Your held items:"
+	print "\nYour held items:"
 	hands = {0: 'main', 1: 'off'}
 	n = 0
 	while n < 2:
@@ -201,13 +216,17 @@ def check_inventory():
 				'nothing', hands[n]
 			)
 		n = n + 1
-			
-	print "The following items are in your bag:"
+	
+	print "\nThe following potions are in your belt:"
+	for thing in Lib.player.belt:
+		print thing.name
+	
+	print "\nThe following items are in your bag:"
 	for thing in Lib.player.bag:
 		print thing.name
 				
 	print """
-Your stats are the following:
+\nYour stats are the following:
 \tHit Points: {0}
 \tArmor Class: {1}
 \tAttack Bonus: {2}
@@ -227,12 +246,16 @@ def reset_names(loot):
 	bag_names = []
 	held_names = []
 	armor_names = []
+	belt_names = []
 	d = {}
 	for thing in loot:
 		loot_names.append(thing.name)
 		d[thing.name] = thing
 	for thing in Lib.player.bag:
 		bag_names.append(thing.name)
+		d[thing.name] = thing
+	for thing in Lib.player.belt:
+		belt_names.append(thing.name)
 		d[thing.name] = thing
 	for thing in Lib.player.held:
 		if thing != None:
@@ -242,7 +265,7 @@ def reset_names(loot):
 		if thing != None:
 			armor_names.append(thing.name)
 			d[thing.name] = thing
-	return [loot_names, bag_names, held_names, armor_names, d]
+	return [loot_names, bag_names, held_names, armor_names, belt_names, d]
 	
 # This function runs as soon as the encounter for a room is completed.  It manages all
 # of the non-encounter actions that the player can choose.
@@ -251,12 +274,13 @@ def loot_the_room(loot):
 			
 	while True:
 		print "Do you want to 'search', 'check inventory', 'manage inventory',"
-		print "or 'leave'?"
+		print "'use potion', or 'leave'?"
 		action = raw_input("> ")
 		if action == 'search':
-			print "You find:"
+			print "\nYou find:"
 			for thing in loot:
 				print thing.name
+				
 		elif action == 'check inventory':
 			check_inventory()
 		
@@ -264,9 +288,26 @@ def loot_the_room(loot):
 			while action != 'done':
 				action = manage_inventory(
 					loot, targetable[0], targetable[1], targetable[2], targetable[3],
-					targetable[4]
+					targetable[4], targetable[5]
 				)
 				targetable = reset_names(loot)
+				
+		elif action == 'use potion':
+			print "Which potion do you want to use?  If you don't want to use one,"
+			print "write 'nothing'."
+			print "The available potions are:"
+			for thing in Lib.player.belt:
+				print thing.name
+			potion = raw_input("> ")
+			while not(targetable[5][potion] in Lib.player.belt) and potion != 'nothing':
+				print "That isn't an available potion."
+				potion = raw_input("> ")
+				
+			if potion == 'nothing':
+				print "Very well."
+			else:
+				targetable[5][potion].action()
+				Lib.player.belt.remove(targetable[5][potion])
 				
 		elif action == 'leave':
 			print "There are no other rooms yet.  Try something else."
@@ -308,6 +349,9 @@ class Room(object):
 					order[n].attack(d[choice[1]])
 				elif choice[0] == 'special':
 					order[n].held[1].action(d[choice[1]])
+				elif choice[0] == 'potion':
+					order[n].belt[target].action()
+					order[n].belt.remove(order[n].belt[target])
 				n = n + 1
 				
 			if Lib.player.hit_points <= 0:
@@ -342,5 +386,3 @@ to catch your breath and prepare.
 		# The function action will only return anything if the option 'leave'
 		# is chosen.  In this case, next_room will represent the next room.
 		next_room = loot_the_room(self.loot)
-
-great_hall = GreatHall()
