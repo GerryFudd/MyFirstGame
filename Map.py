@@ -9,6 +9,9 @@ import Lib
 # This file contains all of the rooms that the player can move between and all of the
 # actions that a player can take when he or she is in the rooms.
 
+# A global variable
+d = {}
+
 # This function figures out the order in which the creatures in the room act.
 # the list 'rolls' keeps track of the rolls and the dict 'match' makes sure the roll
 # is attributed to the correct creature.
@@ -242,30 +245,27 @@ def check_inventory():
 # and a dict that matches them with their objects.  This is the best way I found
 # to manage interactions with inputs.
 def reset_names(loot):
-	loot_names = []
-	bag_names = []
-	held_names = []
-	armor_names = []
-	belt_names = []
+	list = great_hall.stuff_names()
+	for thing in Lib.player.stuff_names():
+		list.append(thing)
+	global d
 	d = {}
+	
 	for thing in loot:
-		loot_names.append(thing.name)
 		d[thing.name] = thing
 	for thing in Lib.player.bag:
-		bag_names.append(thing.name)
 		d[thing.name] = thing
 	for thing in Lib.player.belt:
-		belt_names.append(thing.name)
 		d[thing.name] = thing
 	for thing in Lib.player.held:
 		if thing != None:
-			held_names.append(thing.name)
 			d[thing.name] = thing
 	for thing in Lib.player.armor:
 		if thing != None:
-			armor_names.append(thing.name)
 			d[thing.name] = thing
-	return [loot_names, bag_names, held_names, armor_names, belt_names, d]
+			
+	list.append(d)
+	return list
 	
 # This function runs as soon as the encounter for a room is completed.  It manages all
 # of the non-encounter actions that the player can choose.
@@ -299,7 +299,9 @@ def loot_the_room(loot):
 			for thing in Lib.player.belt:
 				print thing.name
 			potion = raw_input("> ")
-			while not(targetable[5][potion] in Lib.player.belt) and potion != 'nothing':
+			while (
+				not(targetable[5][potion] in Lib.player.belt) and potion != 'nothing'
+			):
 				print "That isn't an available potion."
 				potion = raw_input("> ")
 				
@@ -316,6 +318,13 @@ def loot_the_room(loot):
 
 # This is my basic room outline.  It has an encounter and then a chance to loot.
 class Room(object):
+
+	def stuff_names(self):
+		loot_names = []
+		for thing in self.loot:
+			loot_names.append(thing.name)
+			
+		return [loot_names]
 	
 	def encounter(self, creatures):
 		creatures.append(Lib.player)
@@ -386,3 +395,5 @@ to catch your breath and prepare.
 		# The function action will only return anything if the option 'leave'
 		# is chosen.  In this case, next_room will represent the next room.
 		next_room = loot_the_room(self.loot)
+		
+great_hall = GreatHall()

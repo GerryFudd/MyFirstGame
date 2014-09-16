@@ -140,6 +140,24 @@ class PlayerCharacter(Creature):
 			if isinstance(self.held[1], Shield):
 				self.ac = self.ac + self.held[1].bonus
 	
+	def stuff_names(self):
+		armor_names = []
+		for thing in self.armor:
+			if thing != None:
+				armor_names.append(thing.name)
+		held_names = []
+		for thing in self.held:
+			if thing != None:
+				held_names.append(thing.name)
+		belt_names = []
+		for thing in self.belt:
+			belt_names.append(thing.name)
+		bag_names = []
+		for thing in self.bag:
+			bag_names.append(thing.name)
+			
+		return [bag_names, held_names, armor_names, belt_names]
+		
 	# Creatures should be able to drop items and store items.  That is the reason for
 	# the two functions drop and store.
 	# The thing must be an instance of a weapon or armor.
@@ -321,7 +339,7 @@ You attempt to use {0}.
 	
 # The game defaults to making a player named Steve with 14 hit points, combat = 2, and
 # athletic = 1
-player = PlayerCharacter('Steve', 14, 2, 1)
+player = PlayerCharacter('Steve', 14, 50, 1)
 		
 class Goblin(Creature):
 	
