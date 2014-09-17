@@ -48,6 +48,129 @@ def initiative(creature_list):
 		n = n - 1
 	return initiative_order
 	
+def add_armor(thing):
+	Lib.player.ac = Lib.player.ac + thing.bonus
+	print "Your Armor Class is now: {0}.".format(Lib.player.ac)
+	if isinstance(thing, Lib.Shield):
+		Lib.player.held[1] = thing
+	else:
+		Lib.player.armor[thing.slot] = thing
+	
+def lose_armor(thing):
+	Lib.player.ac = Lib.player.ac - thing.bonus
+	print "Your Armor Class is now: {0}.".format(Lib.player.ac)
+	if isinstance(thing, Lib.Shield):
+		Lib.player.held[1] = None
+	else:
+		Lib.player.armor[thing.slot] = None
+	
+def add_weapon(thing):
+	Lib.player.die = Lib.player.die + thing.die
+	print "Your Attack Die is now: {0}.".format(Lib.player.die)
+	Lib.player.att = Lib.player.att + thing.bonus
+	print "Your Attack Bonus is now: {0}.".format(Lib.player.att)
+	Lib.player.damage = Lib.player.damage + thing.bonus
+	print "Your Damage Bonus is now: {0}.".format(Lib.player.damage)
+	Lib.player.held[0] = thing
+	
+def lose_weapon(thing):
+	Lib.player.die = Lib.player.die - thing.die
+	print "Your Attack Die is now: {0}.".format(Lib.player.die)
+	Lib.player.att = Lib.player.att - thing.bonus
+	print "Your Attack Bonus is now: {0}.".format(Lib.player.att)
+	Lib.player.damage = Lib.player.damage - thing.bonus
+	print "Your Damage Bonus is now: {0}.".format(Lib.player.damage)
+	Lib.player.held[0] = None
+	
+					
+def drop(thing, loot):
+	print "You are attempting to drop {0}.".format(thing.name)
+	if thing in Lib.player.bag:
+		Lib.player.bag.remove(thing)
+		
+	elif isinstance(thing, Lib.Armor):
+		lose_armor(thing)
+			
+	elif isinstance(thing, Lib.Weapon):
+		lose_weapon(thing)
+		
+	elif isinstance(thing, Lib.Wand):
+		Lib.player.held[1] = None
+		
+	else:
+		Lib.player.belt.remove(thing)
+		
+	loot.append(thing)
+	print "You have dropped {0}.".format(thing.name)
+	
+def store(thing, loot):
+	print "You are attempting to store {0}.".format(thing.name)
+
+	if len(Lib.player.bag) >= 5:
+		print "Your bag is already full."
+		drop(thing)
+		
+	elif thing in loot:
+		loot.remove(thing)
+		
+	elif isinstance(thing, Lib.Armor):
+		lose_armor(thing)
+			
+	elif isinstance(thing, Lib.Weapon):
+		lose_weapon(thing)
+		
+	elif isinstance(thing, Lib.Wand):
+		Lib.player.held[1] = None
+		
+	else:
+		Lib.player.belt.remove(thing)
+		
+			
+	Lib.player.bag.append(thing)
+	print "You have stored {0}.".format(thing.name)
+	
+def equip(thing, loot):
+	if thing in loot:
+		loot.remove(thing)
+	else:
+		Lib.player.bag.remove(thing)
+			
+	if isinstance(thing, Lib.Weapon):
+		print "You are attempting to equip {0}.".format(thing.name)
+		if Lib.player.held[0] != None:
+			store(Lib.player.held[0], loot)
+		add_weapon(thing)
+		print "You have equipped {0}.".format(thing.name)
+			
+	elif isinstance(thing, Lib.Armor):
+		print "You are attempting to put on {0}.".format(thing.name)
+		if isinstance(thing, Lib.Shield):
+			if Lib.player.held[1] != None:
+				store(Lib.player.held[1], loot)
+		elif Lib.player.armor[thing.slot] != None:
+			store(Lib.player.armor[thing.slot], loot)
+		add_armor(thing)
+		print "You have put on {0}.".format(thing.name)
+			
+	elif isinstance(thing, Lib.Wand):
+		print "You are attempting to equip {0}.".format(thing.name)
+		if Lib.player.held[1] != None:
+			store(Lib.player.held[1], loot)
+		Lib.player.held[1] = thing
+		print "You have equipped {0}.".format(thing.name)
+		
+	else:
+		print """
+You are attempting to tuck {0} into your potion belt.
+		""".format(thing.name)
+		
+		if len(Lib.player.belt) >= 5:
+			print "Your potion belt is already full."
+			store(thing, loot)
+		else:	
+			Lib.player.belt.append(thing)
+			print "{0} is tucked into your belt.".format(thing.name)
+	
 # This function represents what happens when the player attempts to store an item.
 def store_fun(loot, loot_names, held_names, armor_names, belt_names, d):
 	print "What do you want to store?  If you don't want to store something, type"
@@ -66,22 +189,8 @@ def store_fun(loot, loot_names, held_names, armor_names, belt_names, d):
 	if target == 'nothing':
 		print "Very well."
 			
-	elif target in loot_names:
-		Lib.player.store(d[target], loot, loot)
-			
-	elif target in belt_names:
-		Lib.player.store(d[target], Lib.player.belt, loot)
-			
-	elif target in held_names:
-		if isinstance(d[target], Lib.Weapon):
-			Lib.player.store(d[target], [Lib.player.held, 0], loot)
-		if isinstance(d[target], Lib.SpecialItem):
-			Lib.player.store(d[target], [Lib.player.held, 1], loot)
-			
-	elif target in armor_names:
-		Lib.player.store(
-			d[target], [Lib.player.armor, d[target].slot], loot
-		)
+	else:
+		store(d[target], loot)
 		
 # This function represents what happens when the player attempts to equip an item.
 def equip_fun(loot, loot_names, bag_names, d):
@@ -101,31 +210,9 @@ def equip_fun(loot, loot_names, bag_names, d):
 	# equip 'nothing', then isinsthance(d['nothing'], ...) will return an error.  I need
 	# to prevent that.  I also need to sort out whether the equipped item is a weapon
 	# or an armor, and that will decide which function from Lib.player I will need.
-	if target != 'nothing':
-		if isinstance(d[target], Lib.Weapon):
-			if d[target] in loot:
-				Lib.player.equip(d[target], loot, loot)
-			else:
-				Lib.player.equip(d[target], Lib.player.bag, loot)
-				
-		elif isinstance(d[target], Lib.Armor):
-			if d[target] in loot:
-				Lib.player.wear(d[target], loot, loot)
-			else:
-				Lib.player.wear(d[target], Lib.player.bag, loot)
-				
-		elif isinstance(d[target], Lib.SpecialItem):
-			if isinstance(d[target], Lib.Potion):
-				if d[target] in loot:
-					Lib.player.tuck(d[target], loot, loot)
-				else:
-					Lib.player.tuck(d[target], Lib.player.bag, loot)
-				
-			else:
-				if d[target] in loot:
-					Lib.player.hold(d[target], loot, loot)
-				else:
-					Lib.player.hold(d[target], Lib.player.bag, loot)
+	else:
+		equip(d[target], loot)
+		
 				
 # This function represents what happens when the player attempts to drop an item.
 def drop_fun(loot, bag_names, held_names, armor_names, belt_names, d):
@@ -144,32 +231,10 @@ def drop_fun(loot, bag_names, held_names, armor_names, belt_names, d):
 		target = raw_input("> ")
 	if target == 'nothing':
 		print "Very well."
+		
 	else:
-		thing = d[target]
-		print "You are attempting to drop {0}.".format(thing.name)
-		if isinstance(thing, Lib.Armor):
-			Lib.player.ac = Lib.player.ac - thing.bonus
-			print "Your Armor Class is now: {0}.".format(Lib.player.ac)
-			if isinstance(thing, Lib.Shield):
-				Lib.player.held[1] = None
-			else:
-				Lib.player.armor[thing.slot] = None
-		elif isinstance(thing, Lib.Weapon):
-			Lib.player.die = Lib.player.die - thing.die
-			print "Your Attack Die is now: {0}.".format(Lib.player.die)
-			Lib.player.att = Lib.player.att - thing.bonus
-			print "Your Attack Bonus is now: {0}.".format(Lib.player.att)
-			Lib.player.damage = Lib.player.damage - thing.bonus
-			print "Your Damage Bonus is now: {0}.".format(Lib.player.damage)
-			Lib.player.held[0] = None
-		elif isinstance(thing, Lib.Wand):
-			Lib.player.held[1] = None
-		elif isinstance(thing, Lib.Potion):
-			Lib.player.belt.remove(thing)
-		else:
-			Lib.player.bag.remove(thing)
-		loot.append(thing)
-		print "You have dropped {0}.".format(thing.name)
+		drop(d[target], loot)
+		
 
 # This function represents what happens when the player choses to manage inventory.
 def manage_inventory(
