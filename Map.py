@@ -144,23 +144,32 @@ def drop_fun(loot, bag_names, held_names, armor_names, belt_names, d):
 		target = raw_input("> ")
 	if target == 'nothing':
 		print "Very well."
-			
-	elif target in bag_names:
-		Lib.player.drop(d[target], Lib.player.bag, loot)
-			
-	elif target in belt_names:
-		Lib.player.drop(d[target], Lib.player.belt, loot)
-			
-	elif target in held_names:
-		if isinstance(d[target], Lib.Weapon):
-			Lib.player.drop(d[target], [Lib.player.held, 0], loot)
-		if isinstance(d[target], Lib.SpecialItem):
-			Lib.player.drop(d[target], [Lib.player.held, 1], loot)
-			
-	elif target in armor_names:
-		Lib.player.drop(
-			d[target], [Lib.player.armor, d[target].slot], loot
-		)
+	else:
+		thing = d[target]
+		print "You are attempting to drop {0}.".format(thing.name)
+		if isinstance(thing, Lib.Armor):
+			Lib.player.ac = Lib.player.ac - thing.bonus
+			print "Your Armor Class is now: {0}.".format(Lib.player.ac)
+			if isinstance(thing, Lib.Shield):
+				Lib.player.held[1] = None
+			else:
+				Lib.player.armor[thing.slot] = None
+		elif isinstance(thing, Lib.Weapon):
+			Lib.player.die = Lib.player.die - thing.die
+			print "Your Attack Die is now: {0}.".format(Lib.player.die)
+			Lib.player.att = Lib.player.att - thing.bonus
+			print "Your Attack Bonus is now: {0}.".format(Lib.player.att)
+			Lib.player.damage = Lib.player.damage - thing.bonus
+			print "Your Damage Bonus is now: {0}.".format(Lib.player.damage)
+			Lib.player.held[0] = None
+		elif isinstance(thing, Lib.Wand):
+			Lib.player.held[1] = None
+		elif isinstance(thing, Lib.Potion):
+			Lib.player.belt.remove(thing)
+		else:
+			Lib.player.bag.remove(thing)
+		loot.append(thing)
+		print "You have dropped {0}.".format(thing.name)
 
 # This function represents what happens when the player choses to manage inventory.
 def manage_inventory(
@@ -358,6 +367,8 @@ class Room(object):
 					order[n].attack(d[choice[1]])
 				elif choice[0] == 'special':
 					order[n].held[1].action(d[choice[1]])
+				elif choice[0] == 'spell':
+					order[n].spells[choice[1]](d[choice[2]])
 				elif choice[0] == 'potion':
 					order[n].belt[target].action()
 					order[n].belt.remove(order[n].belt[target])

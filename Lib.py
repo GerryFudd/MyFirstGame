@@ -65,8 +65,17 @@ and deals {1} points of damage.
 {0} has {2} hit points left.
 	""".format(target.name, damage, target.hit_points)  
 	
+def bolster(target):
+	hp = randint(1, 8) + 2
+	target.hit_points += hp
+	print "{0} has {1} hit points.".format(target.name, target.hit_points)
+	target.att += 1
+	target.damage += 1
+	target.buff += 1
+	print "{0} has been bolstered.".format(target.name)
+	
 def heal(target):
-	healing = randint(1, 8) +1
+	healing = randint(1, 8) + 1
 	if target.maxhp < target.hit_points + healing:
 		print "{0} gains {1} hit points.".format(
 			target.name, target.maxhp - target.hit_points
@@ -117,13 +126,13 @@ leather = Armor('Leather Armor', None, 2, 0)
 mail = Armor('Chain Mail', None, 4, 0)
 mmwand = Wand('Wand of Magic Missile', magic_missile)
 buckler = Shield('Buckler', 1)
-hpot = Potion('Healing Potion', heal)
+hpot1 = Potion('Healing Potion', heal)
 	
 class PlayerCharacter(Creature):
 		
 	armor = [cloth, None, None, None, None]
 	held = [club, buckler]
-	belt = [hpot]
+	belt = [hpot1]
 	bag = []
 
 	def __init__(self, name, maxhp, combat, athletic):
@@ -135,6 +144,7 @@ class PlayerCharacter(Creature):
 		self.damage = combat + self.held[0].bonus
 		self.initiative = athletic
 		self.die = self.held[0].die
+		self.buff = 0
 		
 		if self.held[1] != None:
 			if isinstance(self.held[1], Shield):
@@ -352,15 +362,4 @@ class Goblin(Creature):
 		self.damage = -1
 		self.initiative = 2
 		self.die = 3
-	
-class Wolf(Creature):
-
-	def __init__(self, name):
-		self.name = name
-		self.maxhp = 6
-		self.hit_points = 6
-		self.ac = 15
-		self.att = 3
-		self.damage = 2
-		self.initiative = 2
-		self.die = 8
+		self.buff = 0
