@@ -54,12 +54,6 @@ class SpecialItem(object):
 
 	def action(self):
 		print "There is no special action for this item."
-
-class Shield(SpecialItem):
-	
-	def __init__(self, name, bonus):
-		self.name = name
-		self.bonus = bonus
 		
 def magic_missile(target):
 	damage = randint(1, 4) + 1
@@ -108,6 +102,12 @@ class Armor(object):
 		self.action = action
 		self.bonus = bonus
 		self.slot = slot
+
+class Shield(Armor):
+	
+	def __init__(self, name, bonus):
+		self.name = name
+		self.bonus = bonus
 
 club = Weapon('Club', 4, 0)
 dagger = Weapon('Dagger', 4, 1)
