@@ -87,12 +87,27 @@ def heal(target):
 	
 class Wand(SpecialItem):
 
-	def __init__(self, name, spell_name):
+	def __init__(self, name, spell_name, num_targets):
 		self.name = name
 		self.spell_name = spell_name
+		self.num_targets = num_targets
 		
-	def action(self, target):
-		self.spell_name(target)
+	def action(self, pos_targets):
+		print "This action may target up to {0} things.".format(self.num_targets)
+		print "The same thing may be targeted multiple times and the legal targets are:"
+		for thing in pos_targets:
+			print thing
+		n = 1
+		targets = []
+		while n <= self.num_targets:
+			print "Target number {0} is:".format(n)
+			target = raw_input("> ")
+			while not(target in pos_targets):
+				print "That isn't a possible target.  Try again."
+				target = raw_input("> ")
+			targets.append(target)
+		for thing in targets:
+			self.spell_name(thing)
 		
 class Potion(SpecialItem):
 
@@ -124,7 +139,7 @@ ssword = Weapon('Shord Sword', 6, 1)
 cloth = Armor('Cloth Armor', None, 1, 0)
 leather = Armor('Leather Armor', None, 2, 0)
 mail = Armor('Chain Mail', None, 4, 0)
-mmwand = Wand('Wand of Magic Missile', magic_missile)
+mmwand = Wand('Wand of Magic Missile', magic_missile, 2)
 buckler = Shield('Buckler', 1)
 hpot1 = Potion('Healing Potion', heal)
 	

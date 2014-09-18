@@ -406,14 +406,14 @@ class Room(object):
 		
 		# This code makes lists of legal targets and a dict to match
 		targets = []
-		d = {}
+		d1 = {}
 		for thing in order:
 			targets.append(thing.name)
-			d[thing.name] = thing
+			d1[thing.name] = thing
 		targets.remove(Lib.player.name)
 			
-		# This code runs through a combat.  So far, the only action is to attack.
-		# I will alter this to include more options later.
+		# This code runs through a combat.  Monsters attack the player on their turns.
+		# The player may attack a target or use an item.
 		n = 0
 		while order != [Lib.player]:
 			if order[n].hit_points <= 0:
@@ -421,22 +421,94 @@ class Room(object):
 				print "{0} is dead.".format(dead_thing)
 				targets.remove(order[n].name)
 				order.remove(order[n])
-			else:
-				print "{0} has the initiative.".format(order[n].name)
-				choice = order[n].comb(targets)
+			elif order[n] == Lib.player:
+				print "{0} has the initiative.".format(Lib.player.name)
+				targetable = reset_names(self.loot)
+				d2 = targetable[5]
+				belt_names = targetable[4]
+				armor_names = targetable[3]
+				held_names = targetable[2]
 				# The combat function in Creature needs to return a list.
 				# The first entry in the list needs to be either 'attack' or
 				# special.  The second entry needs to be a choice that is associated
 				# with that type of action.
-				if choice[0] == 'attack':
-					order[n].attack(d[choice[1]])
-				elif choice[0] == 'special':
-					order[n].held[1].action(d[choice[1]])
-				elif choice[0] == 'spell':
-					order[n].spells[choice[1]](d[choice[2]])
-				elif choice[0] == 'potion':
-					order[n].belt[target].action()
-					order[n].belt.remove(order[n].belt[target])
+				print """
+What do you want to do?  You can 'attack', 'use special item', or 'use potion'.
+				"""
+				action = raw_input("> ")
+		
+				while not(
+					action == 'attack'
+					or action == 'use special item'
+					or action == 'use potion'
+				):
+					print "You can't do that."
+					action = raw_input("> ")
+			
+				if action == 'use special item':
+					special_items = []
+					for thing in held_names:
+						if isinstance(d2[thing], Lib.SpecialItem):
+							special_items.append(thing)
+					for thing in armor_names:
+						if isinstance(d2[thing], Lib.SpecialItem):
+							special_items.append(thing)
+					print "You are holding the following special items:"
+					for thing in special_items:
+						print thing
+					print """
+Which item do you want to use?  If you've changed your mind, write 'nothing'.
+					"""
+					target = raw_input("> ")
+					
+					while not(target in special_items or target == 'nothing'):
+						print "That isn't an option. Try again."
+						target = raw_input("> ")
+						
+					if target == 'nothing':
+						print "Very well."
+					else:
+						print """
+You attempt to use {0}.
+						""".format(target)
+						d2[target].special[targets]
+				
+				elif action == 'use potion':
+					print "Which potion will you use?"
+					print "The available potions are:"
+					for thing in belt_names:
+						print thing
+					print "If don't want to use a potion, write 'nothing'."
+					target = raw_input("> ")
+					
+					while not(target in belt_names or target == 'nothing'):
+						print "That isn't an avalable potion."
+						target = raw_input("> ")
+				
+					if target == 'nothing':
+						print "Very well."
+					else:
+						d2[target].special()
+						n = n + 1
+	
+				elif action == 'attack':
+					print "Who will you attack?  The legal targets are:"
+					for thing in targets:
+						print thing
+					print "If you don't want to attack anything, write 'nothing'."
+					target = raw_input("> ")
+				
+					while not(target in targets or target == 'nothing'):
+						print "That isn't a legal target."
+						target = raw_input("> ")
+					if target == 'nothing':
+						print "Very well."
+					else:
+						Lib.player.attack(d1[target])
+						n = n + 1
+			else:
+				print "{0} has the initiative.".format(order[n].name)
+				order[n].attack(Lib.player)
 				n = n + 1
 				
 			if Lib.player.hit_points <= 0:
