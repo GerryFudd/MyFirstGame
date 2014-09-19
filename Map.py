@@ -48,6 +48,50 @@ def initiative(creature_list):
 		n = n - 1
 	return initiative_order
 	
+def special_fun(n, targets, d1, held_names, armor_names, d2):
+	special_items = []
+	for thing in held_names:
+		if isinstance(d2[thing], Lib.SpecialItem):
+			special_items.append(thing)
+	for thing in armor_names:
+		if isinstance(d2[thing], Lib.SpecialItem):
+			special_items.append(thing)
+	print "You have the following special items equipped:"
+	for thing in special_items:
+		print thing
+	print """
+Which item do you want to use?  If you've changed your mind, write 'nothing'.
+	"""
+	target = raw_input("> ")
+					
+	while not(target in special_items or target == 'nothing'):
+		print "That isn't an option. Try again."
+		target = raw_input("> ")
+						
+	if target == 'nothing':
+		print "Very well."
+	else:
+		print """
+You attempt to use {0}. It requires {1} targets. The legal targets are:
+		""".format(target, d2[target].num_targets)
+		for thing in targets:
+			print thing
+		print Lib.player.name
+		m = 1
+		use_on = []
+		while m <= d2[target].num_targets:
+			print "Target {0} is:".format(m)
+			tar = raw_input("> ")
+			while not(tar in targets or tar == Lib.player.name):
+				print "That isn't a legal target.  Try again."
+				tar = raw_input("> ")
+			use_on.append(tar)
+			m = m + 1
+		for thing in use_on:
+			d2[target].special(d1[thing])
+		n = n + 1
+	return n
+	
 def add_armor(thing):
 	Lib.player.ac = Lib.player.ac + thing.bonus
 	print "Your Armor Class is now: {0}.".format(Lib.player.ac)
@@ -373,9 +417,7 @@ def loot_the_room(loot):
 			for thing in Lib.player.belt:
 				print thing.name
 			potion = raw_input("> ")
-			while (
-				not(targetable[5][potion] in Lib.player.belt) and potion != 'nothing'
-			):
+			while not(potion in targetable[4] or potion == 'nothing'):
 				print "That isn't an available potion."
 				potion = raw_input("> ")
 				
@@ -446,49 +488,25 @@ What do you want to do?  You can 'attack', 'use special item', or 'use potion'.
 					action = raw_input("> ")
 			
 				if action == 'use special item':
-					special_items = []
-					for thing in held_names:
-						if isinstance(d2[thing], Lib.SpecialItem):
-							special_items.append(thing)
-					for thing in armor_names:
-						if isinstance(d2[thing], Lib.SpecialItem):
-							special_items.append(thing)
-					print "You are holding the following special items:"
-					for thing in special_items:
-						print thing
-					print """
-Which item do you want to use?  If you've changed your mind, write 'nothing'.
-					"""
-					target = raw_input("> ")
-					
-					while not(target in special_items or target == 'nothing'):
-						print "That isn't an option. Try again."
-						target = raw_input("> ")
-						
-					if target == 'nothing':
-						print "Very well."
-					else:
-						print """
-You attempt to use {0}.
-						""".format(target)
-						d2[target].special[targets]
+					n = special_fun(n, targets, d1, held_names, armor_names, d2)
 				
 				elif action == 'use potion':
-					print "Which potion will you use?"
+					print """
+Which potion do you want to use?  If you don't want to use one, write 'nothing'.
+					"""
 					print "The available potions are:"
-					for thing in belt_names:
-						print thing
-					print "If don't want to use a potion, write 'nothing'."
-					target = raw_input("> ")
-					
-					while not(target in belt_names or target == 'nothing'):
-						print "That isn't an avalable potion."
-						target = raw_input("> ")
+					for thing in Lib.player.belt:
+						print thing.name
+					potion = raw_input("> ")
+					while not(potion in targetable[4] or potion == 'nothing'):
+						print "That isn't an available potion."
+						potion = raw_input("> ")
 				
-					if target == 'nothing':
+					if potion == 'nothing':
 						print "Very well."
 					else:
-						d2[target].special()
+						targetable[5][potion].action()
+						Lib.player.belt.remove(targetable[5][potion])
 						n = n + 1
 	
 				elif action == 'attack':

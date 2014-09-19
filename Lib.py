@@ -39,9 +39,6 @@ class Creature(object):
 				print "{0} has {1} hit points left".format(
 					target.name, target.hit_points
 				)
-				
-	def comb(self, targets):
-		return ['attack', player.name]
 		
 class Weapon(object):
 	
@@ -51,9 +48,9 @@ class Weapon(object):
 		self.bonus = bonus
 		
 class SpecialItem(object):
-
-	def action(self):
-		print "There is no special action for this item."
+		
+	def special(self, target):
+		self.spell_name(target)
 		
 def magic_missile(target):
 	damage = randint(1, 4) + 1
@@ -92,23 +89,6 @@ class Wand(SpecialItem):
 		self.spell_name = spell_name
 		self.num_targets = num_targets
 		
-	def action(self, pos_targets):
-		print "This action may target up to {0} things.".format(self.num_targets)
-		print "The same thing may be targeted multiple times and the legal targets are:"
-		for thing in pos_targets:
-			print thing
-		n = 1
-		targets = []
-		while n <= self.num_targets:
-			print "Target number {0} is:".format(n)
-			target = raw_input("> ")
-			while not(target in pos_targets):
-				print "That isn't a possible target.  Try again."
-				target = raw_input("> ")
-			targets.append(target)
-		for thing in targets:
-			self.spell_name(thing)
-		
 class Potion(SpecialItem):
 
 	def __init__(self, name, spell_name):
@@ -146,7 +126,7 @@ hpot1 = Potion('Healing Potion', heal)
 class PlayerCharacter(Creature):
 		
 	armor = [cloth, None, None, None, None]
-	held = [club, buckler]
+	held = [club, mmwand]
 	belt = [hpot1]
 	bag = []
 
@@ -182,63 +162,6 @@ class PlayerCharacter(Creature):
 			bag_names.append(thing.name)
 			
 		return [bag_names, held_names, armor_names, belt_names]
-		
-	# This function manages the actions a player may take in combat
-	def comb(self, targets):
-		print "What do you want to do?  You can 'attack', 'special',"
-		print "or 'potion'."
-		action = raw_input("> ")
-		
-		while not(
-			action == 'attack'
-			or (action == 'special' and isinstance(player.held[1], Wand))
-			or (action == 'potion' and player.belt != [])
-		):
-			print "You can't do that."
-			action = raw_input("> ")
-			
-		if action == 'special':
-			print """
-You attempt to use {0}.
-			""".format(player.held[1].name)
-			print "What do you want to target?  The legal targets are:"
-			for thing in targets:
-				print thing
-			target = raw_input("> ")
-		
-			while not(target in targets):
-				print "That isn't a legal target."
-				target = raw_input("> ")
-				
-		elif action == 'potion':
-			print "Which potion will you use?"
-			print "The available potions are:"
-			n = 0
-			belt_names = []
-			d = {}
-			while n < len(player.belt):
-				print player.belt[n].name
-				belt_names.append(player.belt[n].name)
-				d[player.belt[n].name] = n
-			target = raw_input("> ")
-			
-			while not(target in belt_names):
-				print "That isn't an avalable potion."
-				target = raw_input("> ")
-				
-			target = d[target]
-	
-		elif action == 'attack':
-			print "Who will you attack?  The legal targets are:"
-			for thing in targets:
-				print thing
-			target = raw_input("> ")
-		
-			while not(target in targets):
-				print "That isn't a legal target."
-				target = raw_input("> ")
-		
-		return [action, target]
 	
 # The game defaults to making a player named Steve with 14 hit points, combat = 2, and
 # athletic = 1
