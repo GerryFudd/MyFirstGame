@@ -48,7 +48,10 @@ def initiative(creature_list):
 		n = n - 1
 	return initiative_order
 	
+# This function details what happens when the player uses a special item
 def special_fun(n, targets, d1, held_names, armor_names, d2):
+
+	# First report to the player what special items are available.
 	special_items = []
 	for thing in held_names:
 		if isinstance(d2[thing], Lib.SpecialItem):
@@ -59,6 +62,10 @@ def special_fun(n, targets, d1, held_names, armor_names, d2):
 	print "You have the following special items equipped:"
 	for thing in special_items:
 		print thing
+		
+	# Once the player gets a look at the items that are available, he or she
+	# can pick which one or nothing.  If nothing is chosen, the player restarts
+	# his or her turn.
 	print """
 Which item do you want to use?  If you've changed your mind, write 'nothing'.
 	"""
@@ -70,6 +77,8 @@ Which item do you want to use?  If you've changed your mind, write 'nothing'.
 						
 	if target == 'nothing':
 		print "Very well."
+		
+	# Here is where the use of special items is detailed.
 	else:
 		print """
 You attempt to use {0}. It requires {1} targets. The legal targets are:
@@ -92,6 +101,8 @@ You attempt to use {0}. It requires {1} targets. The legal targets are:
 		n = n + 1
 	return n
 	
+# The next four functions are used whenever a piece of armor or a weapon
+# is equipped or unequipped.
 def add_armor(thing):
 	Lib.player.ac = Lib.player.ac + thing.bonus
 	print "Your Armor Class is now: {0}.".format(Lib.player.ac)
@@ -126,7 +137,7 @@ def lose_weapon(thing):
 	print "Your Damage Bonus is now: {0}.".format(Lib.player.damage)
 	Lib.player.held[0] = None
 	
-					
+# The next three functions manage the three major out of combat actions.
 def drop(thing, loot):
 	print "You are attempting to drop {0}.".format(thing.name)
 	if thing in Lib.player.bag:
@@ -215,7 +226,8 @@ You are attempting to tuck {0} into your potion belt.
 			Lib.player.belt.append(thing)
 			print "{0} is tucked into your belt.".format(thing.name)
 	
-# This function represents what happens when the player attempts to store an item.
+# The next three functions are where the player makes decisions about inventory
+# manipulation.
 def store_fun(loot, loot_names, held_names, armor_names, belt_names, d):
 	print "What do you want to store?  If you don't want to store something, type"
 	print "'nothing'."
@@ -279,8 +291,6 @@ def drop_fun(loot, bag_names, held_names, armor_names, belt_names, d):
 	else:
 		drop(d[target], loot)
 		
-
-# This function represents what happens when the player choses to manage inventory.
 def manage_inventory(
 	loot, loot_names, bag_names, held_names, armor_names, belt_names, d
 ):
@@ -308,7 +318,6 @@ of the above, say 'done'.
 			
 	return action
 	
-# This function represents what happens when the player choses to check inventory.
 def check_inventory():
 	armor_slots = {0: 'chest', 1: 'head', 2: 'hands', 3: 'feet', 4: 'back'}
 	print "Your armor:"

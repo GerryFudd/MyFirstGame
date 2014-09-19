@@ -1,12 +1,97 @@
 from random import randint
 
 # This file contains the library of things that exist within the game.
+		
+# There are several spells detailed below.  These spells are referenced by
+# special items.  They may potentially be referenced by creatures as well.
+def magic_missile(target):
+	damage = randint(1, 4) + 1
+	target.hit_points = target.hit_points - damage
+	print """
+A short bolt of pure force springs forth from your arm.  It strikes {0} in the chest
+and deals {1} points of damage.
 
-# All of the things for the protagonist to interact with will be either a
-# Creature, a Weapon, an Armor, or a SpecialItem.  The most complicated of
-# these is the Creature.  I want the Creature class to contain all of the
-# actions that a creature might take.  The creature subclasses will contain
-# the creature attributes such as maximum hit points and the like.
+{0} has {2} hit points left.
+	""".format(target.name, damage, target.hit_points)  
+	
+def bolster(target):
+	hp = randint(1, 8) + 2
+	target.hit_points += hp
+	print "{0} has {1} hit points.".format(target.name, target.hit_points)
+	target.att += 1
+	target.damage += 1
+	target.buff += 1
+	print "{0} has been bolstered.".format(target.name)
+	
+def heal(target):
+	healing = randint(1, 8) + 1
+	if target.maxhp < target.hit_points + healing:
+		print "{0} gains {1} hit points.".format(
+			target.name, target.maxhp - target.hit_points
+		)
+		target.hit_points = target.maxhp
+	else:
+		print "{0} gains {1} hit points.".format(target.name, healing)
+		target.hit_points = target.hit_points + healing
+
+# This is the list of classes of loot.
+class Weapon(object):
+	
+	def __init__(self, name, die, bonus):
+		self.name = name
+		self.die = die
+		self.bonus = bonus
+		
+class Armor(object):
+	
+	# The slots are 0: chest, 1: head, 2: hands, 3: feet, 4: back
+	def __init__(self, name, action, bonus, slot):
+		self.name = name
+		self.action = action
+		self.bonus = bonus
+		self.slot = slot
+
+class Shield(Armor):
+	
+	def __init__(self, name, bonus):
+		self.name = name
+		self.bonus = bonus
+		
+class SpecialItem(object):
+		
+	def special(self, target):
+		self.spell_name(target)
+	
+class Wand(SpecialItem):
+
+	def __init__(self, name, spell_name, num_targets):
+		self.name = name
+		self.spell_name = spell_name
+		self.num_targets = num_targets
+		
+class Potion(SpecialItem):
+
+	def __init__(self, name, spell_name):
+		self.name = name
+		self.spell_name = spell_name
+		
+	def action(self):
+		self.spell_name(player)
+
+# This is the complete list of items that exist in the game.
+club = Weapon('Club', 4, 0)
+dagger = Weapon('Dagger', 4, 1)
+ssword = Weapon('Shord Sword', 6, 1)
+cloth = Armor('Cloth Armor', None, 1, 0)
+leather = Armor('Leather Armor', None, 2, 0)
+mail = Armor('Chain Mail', None, 4, 0)
+mmwand = Wand('Wand of Magic Missile', magic_missile, 2)
+buckler = Shield('Buckler', 1)
+hpot1 = Potion('Healing Potion', heal)
+	
+# The creature class and its subclasses are rather bare bones.  The only action
+# handled in this class is the attack.  Subclasses all have an __init__ that
+# spells out combat statistics.
 class Creature(object):
 
 	# The attack action is the most obvious.  This is how one creature attempts
@@ -40,89 +125,6 @@ class Creature(object):
 					target.name, target.hit_points
 				)
 		
-class Weapon(object):
-	
-	def __init__(self, name, die, bonus):
-		self.name = name
-		self.die = die
-		self.bonus = bonus
-		
-class SpecialItem(object):
-		
-	def special(self, target):
-		self.spell_name(target)
-		
-def magic_missile(target):
-	damage = randint(1, 4) + 1
-	target.hit_points = target.hit_points - damage
-	print """
-A short bolt of pure force springs forth from your arm.  It strikes {0} in the chest
-and deals {1} points of damage.
-
-{0} has {2} hit points left.
-	""".format(target.name, damage, target.hit_points)  
-	
-def bolster(target):
-	hp = randint(1, 8) + 2
-	target.hit_points += hp
-	print "{0} has {1} hit points.".format(target.name, target.hit_points)
-	target.att += 1
-	target.damage += 1
-	target.buff += 1
-	print "{0} has been bolstered.".format(target.name)
-	
-def heal(target):
-	healing = randint(1, 8) + 1
-	if target.maxhp < target.hit_points + healing:
-		print "{0} gains {1} hit points.".format(
-			target.name, target.maxhp - target.hit_points
-		)
-		target.hit_points = target.maxhp
-	else:
-		print "{0} gains {1} hit points.".format(target.name, healing)
-		target.hit_points = target.hit_points + healing
-	
-class Wand(SpecialItem):
-
-	def __init__(self, name, spell_name, num_targets):
-		self.name = name
-		self.spell_name = spell_name
-		self.num_targets = num_targets
-		
-class Potion(SpecialItem):
-
-	def __init__(self, name, spell_name):
-		self.name = name
-		self.spell_name = spell_name
-		
-	def action(self):
-		self.spell_name(player)
-		
-class Armor(object):
-	
-	# The slots are 0: chest, 1: head, 2: hands, 3: feet, 4: back
-	def __init__(self, name, action, bonus, slot):
-		self.name = name
-		self.action = action
-		self.bonus = bonus
-		self.slot = slot
-
-class Shield(Armor):
-	
-	def __init__(self, name, bonus):
-		self.name = name
-		self.bonus = bonus
-
-club = Weapon('Club', 4, 0)
-dagger = Weapon('Dagger', 4, 1)
-ssword = Weapon('Shord Sword', 6, 1)
-cloth = Armor('Cloth Armor', None, 1, 0)
-leather = Armor('Leather Armor', None, 2, 0)
-mail = Armor('Chain Mail', None, 4, 0)
-mmwand = Wand('Wand of Magic Missile', magic_missile, 2)
-buckler = Shield('Buckler', 1)
-hpot1 = Potion('Healing Potion', heal)
-	
 class PlayerCharacter(Creature):
 		
 	armor = [cloth, None, None, None, None]
@@ -163,7 +165,7 @@ class PlayerCharacter(Creature):
 			
 		return [bag_names, held_names, armor_names, belt_names]
 	
-# The game defaults to making a player named Steve with 14 hit points, combat = 2, and
+# The game defaults to making a player named Steve with 14 hit points, combat = 50, and
 # athletic = 1
 player = PlayerCharacter('Steve', 14, 50, 1)
 		
