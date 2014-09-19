@@ -87,7 +87,8 @@ leather = Armor('Leather Armor', None, 2, 0)
 mail = Armor('Chain Mail', None, 4, 0)
 mmwand = Wand('Wand of Magic Missile', magic_missile, 2)
 buckler = Shield('Buckler', 1)
-hpot1 = Potion('Healing Potion', heal)
+hpot1 = Potion('Blue Healing Potion', heal)
+hpot2 = Potion('Green Healing Potion', heal)
 	
 # The creature class and its subclasses are rather bare bones.  The only action
 # handled in this class is the attack.  Subclasses all have an __init__ that
@@ -128,7 +129,7 @@ class Creature(object):
 class PlayerCharacter(Creature):
 		
 	armor = [cloth, None, None, None, None]
-	held = [club, mmwand]
+	held = [club, None]
 	belt = [hpot1]
 	bag = []
 
@@ -165,9 +166,9 @@ class PlayerCharacter(Creature):
 			
 		return [bag_names, held_names, armor_names, belt_names]
 	
-# The game defaults to making a player named Steve with 14 hit points, combat = 50, and
+# The game defaults to making a player named Steve with 14 hit points, combat = 2, and
 # athletic = 1
-player = PlayerCharacter('Steve', 14, 50, 1)
+player = PlayerCharacter('Steve', 14, 2, 1)
 		
 class Goblin(Creature):
 	
@@ -181,3 +182,9 @@ class Goblin(Creature):
 		self.initiative = 2
 		self.die = 3
 		self.buff = 0
+		
+
+gob1 = Goblin('The Yellow Goblin')
+gob2 = Goblin('The Green Goblin')
+gob3 = Goblin('The Left Guard')
+gob4 = Goblin('The Right Guard')

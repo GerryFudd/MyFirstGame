@@ -372,7 +372,10 @@ def check_inventory():
 # and a dict that matches them with their objects.  This is the best way I found
 # to manage interactions with inputs.
 def reset_names(loot):
-	list = great_hall.stuff_names()
+	loot_names = []
+	for thing in loot:
+		loot_names.append(thing.name)
+	list = [loot_names]
 	for thing in Lib.player.stuff_names():
 		list.append(thing)
 	global d
@@ -396,7 +399,7 @@ def reset_names(loot):
 	
 # This function runs as soon as the encounter for a room is completed.  It manages all
 # of the non-encounter actions that the player can choose.
-def loot_the_room(loot):
+def loot_the_room(loot, adjacent):
 	targetable = reset_names(loot)
 			
 	while True:
@@ -437,19 +440,39 @@ def loot_the_room(loot):
 				Lib.player.belt.remove(targetable[5][potion])
 				
 		elif action == 'leave':
-			print "There are no other rooms yet.  Try something else."
+			if adjacent == []:
+				print "There are no other rooms yet.  Try something else."
+			else:
+				print "The possible rooms to enter are:"
+				dest_names = []
+				d3 = {}
+				for thing in adjacent:
+					print thing.name
+					dest_names.append(thing.name)
+					d3[thing.name] = thing
+				print """
+Were do you want to go?  If you don't want to leave yet, type 'nothing'.
+				"""
+				dest = raw_input("> ")
+				while not(dest in dest_names or dest == 'nothing'):
+					print "That isn't an option.  Try again."
+					dest = raw_input("> ")
+				if dest == 'nothing':
+					print "Very well."
+				else:
+					print "You go to {0}.".format(dest)
+					return d3[dest]
 		else:
 			print "That isn't an option.  Try again."
 
 # This is my basic room outline.  It has an encounter and then a chance to loot.
 class Room(object):
-
-	def stuff_names(self):
-		loot_names = []
-		for thing in self.loot:
-			loot_names.append(thing.name)
-			
-		return [loot_names]
+	
+	def __init__(self, name, loot, creatures, adjacent):
+		self.name = name
+		self.loot = loot
+		self.creatures = creatures
+		self.adjacent = adjacent
 	
 	def encounter(self, creatures):
 		creatures.append(Lib.player)
@@ -543,15 +566,29 @@ Which potion do you want to use?  If you don't want to use one, write 'nothing'.
 				exit(1)
 			if n >= len(order):
 				n = 0
+				
+# This is the opening scene.  It will include the plot hook for the game and there
+# will be enough loot that the player will have to start making decisions about what
+# to equip.
+class Woods(Room):
+
+	def enter(self):
+		print """
+I will add better flavor text when I feel more creative.
+		"""
+		
+		self.encounter(self.creatures)
+		
+		print """
+The encounter is done. You find some stuff and may re equip before you move on
+to the fortress.
+		"""
+		
+		next_room = loot_the_room(self.loot, self.adjacent)
+		return next_room
 		
 # This is the Great Hall.  It is the first room in the fortress.
 class GreatHall(Room):
-
-	loot = [Lib.dagger, Lib.leather]
-	
-	gob1 = Lib.Goblin('The Left Guard')
-	gob2 = Lib.Goblin('The Right Guard')
-	creatures = [gob1, gob2]
 	
 	def enter(self):
 		print """
@@ -569,6 +606,13 @@ to catch your breath and prepare.
 		"""
 		# The function action will only return anything if the option 'leave'
 		# is chosen.  In this case, next_room will represent the next room.
-		next_room = loot_the_room(self.loot)
-		
-great_hall = GreatHall()
+		next_room = loot_the_room(self.loot, self.adjacent)
+		return next_room
+
+great_hall = GreatHall(
+	'The Great Hall', [Lib.ssword, Lib.mail], [Lib.gob3, Lib.gob4], []
+)		
+woods = Woods(
+	'The Woods', [Lib.dagger, Lib.leather, Lib.mmwand, Lib.buckler, Lib.hpot2],
+	[Lib.gob1, Lib.gob2], [great_hall]
+)
