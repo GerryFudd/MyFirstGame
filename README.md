@@ -14,6 +14,7 @@ I will not be making changes to this game for a while.  I have accomplished some
  - creatures die when it is appropriate,
  - combat ends when it is supposed to, and
  - moving from one room to another works properly.
+
 The following aspects I will change if I come back to this project:
  - I will include items that permanently modify the player's stats or add spells,
  - I will create creatures that can take actions besides attack,
