@@ -81,7 +81,7 @@ class Potion(SpecialItem):
 # This is the complete list of items that exist in the game.
 club = Weapon('Club', 4, 0)
 dagger = Weapon('Dagger', 4, 1)
-ssword = Weapon('Shord Sword', 6, 1)
+ssword = Weapon('Short Sword', 6, 1)
 cloth = Armor('Cloth Armor', None, 1, 0)
 leather = Armor('Leather Armor', None, 2, 0)
 mail = Armor('Chain Mail', None, 4, 0)
